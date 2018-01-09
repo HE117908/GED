@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>GED Interface</title>
+	<style>
+		body {
+			
+			font-family: Helvetica;
+			position: relative;
+			margin: 1em;
+			padding: 1em;
+		}
+
+		h2 {
+			padding-top: 30px;
+		}
+
+		.item {
+			position: relative;
+			margin: 10px;
+			background: #F5F5F5;
+			padding: 20px;
+		}
+
+		.remove {
+			
+		}
+
+		textarea {
+			width: 50%;
+			margin: 2px 0px;
+			height: 120px;
+			font-family: Courier;
+			border: none;
+			background: whitesmoke;
+		}
+
+		#results {
+			position: relative;
+			margin: 50px;
+		}
+
+		#dropper {
+			
+		}
+
+		#dropper.hover {
+			opacity: 0.5;
+			background: lightblue;
+			z-index: 100;
+		}
+
+		#searchside{
+			width : 45%;
+		}
+
+		#uploadside{
+			width : 45%;
+			float: right;
+		}
+		table {
+		    border-collapse: collapse;
+		    width: 50%;
+		}
+
+		table, th, td {
+		    border: 1px solid black;
+		    padding: 0.2em;
+		}
+		th {
+		    height: 50px;
+		    background-color: #999999;
+    		color: white;
+
+		}
+		tr:nth-child(even) {background-color: #c0c0c0;}
+
+	</style>
+</head>
+<body>
+	<div id="uploadside">
+		<form onsubmit="return false;">
+			<fieldset>
+				<legend>Upload:</legend>
+				<br><br>
+				<div id="dropper"><textarea name="body" rows="20" cols="80">drop file here</textarea></div>
+				<br><br>
+				<input type="file" name="file" />
+				<br><br>
+				<label for="dateup">Date : </label>
+				<input type="date" name="dateup" />
+				<br><br>
+				<label for="keywordsup">Keywords : </label>
+				<input type="text" name="keywordsup" />
+				<br><br>
+				<label for="affaireup">Affaire : </label>
+				<input type="text" name="affaireup" />
+				<br><br>
+				<input type="submit" value="Upload file" onclick="postDoc();" />
+			</fieldset>
+		</form>
+	</div>
+    <div id="searchside">
+		<form onsubmit="return false;">
+			<fieldset>
+				<legend>Recherche:</legend>
+				<label for="user">User : </label>
+				<input type="text" name="user" />
+				<br><br>
+				<label for="date">Date : </label>
+				<input type="date" name="date" />
+				<br><br>
+				<label for="keywords">Keywords : </label>
+				<input type="text" name="keywords" />
+				<br><br>
+				<label for="affaire">Affaire : </label>
+				<input type="text" name="affaire" />
+				<br><br>
+				<label for="classed">classé : </label>
+				<input type="checkbox" name="classed" />
+				<br><br>
+				<input type="submit" value="Rechercher" onclick="getDoc();" />
+				<input type="reset" value="Reset" />
+			</fieldset>
+		</form>
+	</div>
+    <div id="results"></div>
+	<table>
+		<caption>Résultats de la recherche</caption>
+
+		<thead> <!-- En-tête du tableau -->
+			<tr>
+				<th>Nom document</th>
+				<th>Nom affaire</th>
+				<th>Date</th>
+				<th>Commentaire</th>
+			</tr>
+		</thead>
+
+		<tfoot> <!-- Pied de tableau -->
+			<tr>
+				<th>Nom document</th>
+				<th>Nom affaire</th>
+				<th>Date</th>
+				<th>Commentaire</th>
+			</tr>
+		</tfoot>
+
+		<tbody id="resultsTable"> <!-- Corps du tableau -->
+			<tr>
+				<td>Notes</td>
+				<td>PROJET</td>
+				<td>2011-12-12</td>
+				<td>hello world!</td>
+			</tr>
+			<tr>
+				<td>Notes2</td>
+				<td>PROJET</td>
+				<td>2011-11-11</td>
+				<td>hello world2!</td>
+			</tr>
+			<tr>
+				<td>Notes2</td>
+				<td>PROJET</td>
+				<td>2011-11-11</td>
+				<td>hello world2!</td>
+			</tr>
+		</tbody>
+	</table>
+    <script language="JavaScript">
+    	var tokenKey = "";
+    	window.onload = getToken();
+
+		if (typeof window.FileReader === 'undefined')
+			alert('File API & FileReader not supported');
+
+		var dropper = document.getElementById("dropper");
+		var results = document.getElementById("results");
+
+		dropper.ondragenter = function (e) {
+			dropper.className = 'hover';
+			e.preventDefault();
+		};
+		dropper.ondragover = function (e) {
+			e.preventDefault();
+		};
+		dropper.ondragleave = function (e) {
+			dropper.className = '';
+			e.preventDefault();
+		};
+		dropper.ondrop = function (e) {
+			var files = [].slice.call(e.dataTransfer.files);
+			files.forEach(function (file) {
+				var reader = new FileReader();
+				reader.onload = function (event) {
+					fileLoaded(file.name, event.target.result);
+				};
+				reader.readAsDataURL(file);
+			});
+			dropper.className = '';
+			e.preventDefault();
+		};
+
+		function fileLoaded(filename, dataUri) {
+
+			var div = document.createElement("div");
+			div.className = 'item';
+
+			var remove = document.createElement("button");
+			remove.className = 'remove';
+			remove.innerHTML = 'x';
+			remove.onclick = function () {
+				if (localStorage) localStorage.removeItem("b64-" + filename);
+				results.removeChild(div);
+			};
+			div.appendChild(remove);
+
+			var name = document.createElement("div");
+			name.innerHTML = filename;
+			div.appendChild(name);
+
+			if (/^data:image/.test(dataUri)) {
+				var imgDiv = document.createElement("div");
+				var img = document.createElement("img");
+				img.src = dataUri;
+				img.style['max-width'] = '100px';
+				img.style['height-width'] = '100px';
+				imgDiv.appendChild(img);
+				div.appendChild(imgDiv);
+			}
+
+			var ta = document.createElement("textarea");
+			ta.onclick = function () {
+				ta.select();
+			};
+			ta.value = dataUri;
+			div.appendChild(ta);
+
+			results.appendChild(div);
+			if (localStorage) localStorage.setItem("b64-" + filename, dataUri);
+		}
+
+		if (localStorage)
+			for (var filename in localStorage)
+				if (filename.indexOf("b64-") === 0)
+					fileLoaded(filename.replace("b64-", ""), localStorage.getItem(filename));
+
+		function getToken() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					console.log(xhttp.responseText);
+					tokenKey = xhttp.responseText;
+				}
+			};
+			xhttp.open("GET", "get-token/AV", true);
+			xhttp.setRequestHeader("Content-type", "application/json");
+			xhttp.send();
+		}
+
+		function postDoc() {
+			getToken();
+			var xhttp = new XMLHttpRequest();
+			xhttp.open("POST", "/document/upload", true);
+			xhttp.setRequestHeader("Content-type", "application/json");
+			if(tokenKey != ""){
+				xhttp.setRequestHeader("Authorization", "bearer " + tokenKey);
+			}else(
+				console.log("pas de tokenKey pour l'Authorization bearer!")
+			);
+			bodyreq = '{"idcode" : "0","idtCode" : "DOC","idComment": "test json post","idPath": "","idFileName": "jsonpost.txt","idClassed": "0","idCreationDate": "2017-10-19","idVersion": "0","idSize": "672","idJSon" : "","idBinary": "DQovL3F1ZXJ5aW5nIHN0b3JlIHByb2NlZHVyZXM/Pz8NCi8qDQoJZGIsIGVycmRiIDo9IHNxbC5PcGVuKCJtc3NxbCIsICJzZXJ2ZXI9IiArIGNvbmYuRGF0YWJhc2UuU2VydmVyICsNCgkJCQkJCQkJCQkiO0RhdGFCYXNlPVRGRSIgKw0KCQkJCQkJCQkJCSI7dXNlciBpZD0iICsgY29uZi5EYXRhYmFzZS5Vc2VyICsNCgkJCQkJCQkJCQkiO3Bhc3N3b3JkPSIgKyBjb25mLkRhdGFiYXNlLlBhc3N3b3JkICsNCgkJCQkJCQkJCQkiO3BvcnQ9IiArIGNvbmYuRGF0YWJhc2UuUG9ydCkNCglpZiBlcnJkYiAhPSBuaWwgew0KCQlsb2cuUHJpbnRsbigiLS0tRXJyb3Igb3BlbiBkYi0tLToiLCBlcnJkYi5FcnJvcigpKSAvL3JldHVybiBxdWl0dGUNCgl9DQoJbG9nLlByaW50bG4oIi0tLS0tLS0tLS1Db25uZWN0aW9uIG9wZW5lZCAtLS0tLS0tLS0iKQ0KKi8NCg0KDQpxdWVyeVN0IDo9ICJleGVjIFtkYm9dLltIZWxsb10iLy9URkUuaURvYy5HZXREb2MgQGlkR3VpZD0gJyIgKyBndWlkICsgIiciDQoNCg0KCS8qc3FsRGF0YSwgZXJyIDo9IGRiLkV4ZWMocXVlcnlTdCk7DQoJbG9nLlByaW50bG4oIi0tLS0tLS0tLS1FcnJvciBxdWVyeTogLS0tLS0tLS0tIiwgZXJyLkVycm9yKCkpDQoJbG9nLlByaW50bG4oIi0tLS0tLS0tLS1QcmludCBxdWVyeTogLS0tLS0tLS0tIiwgcXVlcnlTdCkqLw0K","idBinaryType": "txt","idBinaryLg": "FR"}';
+
+			xhttp.send(bodyreq);
+		}
+
+		function getDoc() {
+			getToken();
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					responseWs(xhttp.responseText);
+				}
+			};
+			xhttp.open("GET", "temp/AV", true);
+			xhttp.setRequestHeader("Content-type", "application/json");
+			if(tokenKey != ""){
+				xhttp.setRequestHeader("Authorization", "bearer " + tokenKey);
+			}else(
+				console.log("pas de tokenKey pour l'Authorization bearer!")
+			);
+			xhttp.send();
+		}
+
+		function responseWs(jsonrep) {
+			myObj = JSON.parse(jsonrep);
+			var jsonDoc = jsonrep;
+			var table="";
+			for (x in myObj) { 
+				table += "<tr><td>" +
+				myObj[x].idFileName +
+				"</td><td>" +
+				"" +
+				"</td><td>" +
+				myObj[x].idCreationDate +
+				"</td><td>" +
+				myObj[x].idComment +
+				"</td></tr>";
+			}
+			document.getElementById("resultsTable").innerHTML = table;
+		}
+	</script>
+</body>
+</html>
+
+<!-- {
+	"idcode" : "0",
+	"idtCode" : "DOC",
+	"idComment": "hello go",
+	"idPath": "",
+	"idFileName": "note64.txt",
+	"idClassed": "0",
+	"idCreationDate": "2017-10-19",
+	"idVersion": "0",
+	"idSize": "672",
+	"idJSon" : "",
+	"idBinary": "DQovL3F1ZXJ5aW5nIHN0b3JlIHByb2NlZHVyZXM/Pz8NCi8qDQoJZGIsIGVycmRiIDo9IHNxbC5PcGVuKCJtc3NxbCIsICJzZXJ2ZXI9IiArIGNvbmYuRGF0YWJhc2UuU2VydmVyICsNCgkJCQkJCQkJCQkiO0RhdGFCYXNlPVRGRSIgKw0KCQkJCQkJCQkJCSI7dXNlciBpZD0iICsgY29uZi5EYXRhYmFzZS5Vc2VyICsNCgkJCQkJCQkJCQkiO3Bhc3N3b3JkPSIgKyBjb25mLkRhdGFiYXNlLlBhc3N3b3JkICsNCgkJCQkJCQkJCQkiO3BvcnQ9IiArIGNvbmYuRGF0YWJhc2UuUG9ydCkNCglpZiBlcnJkYiAhPSBuaWwgew0KCQlsb2cuUHJpbnRsbigiLS0tRXJyb3Igb3BlbiBkYi0tLToiLCBlcnJkYi5FcnJvcigpKSAvL3JldHVybiBxdWl0dGUNCgl9DQoJbG9nLlByaW50bG4oIi0tLS0tLS0tLS1Db25uZWN0aW9uIG9wZW5lZCAtLS0tLS0tLS0iKQ0KKi8NCg0KDQpxdWVyeVN0IDo9ICJleGVjIFtkYm9dLltIZWxsb10iLy9URkUuaURvYy5HZXREb2MgQGlkR3VpZD0gJyIgKyBndWlkICsgIiciDQoNCg0KCS8qc3FsRGF0YSwgZXJyIDo9IGRiLkV4ZWMocXVlcnlTdCk7DQoJbG9nLlByaW50bG4oIi0tLS0tLS0tLS1FcnJvciBxdWVyeTogLS0tLS0tLS0tIiwgZXJyLkVycm9yKCkpDQoJbG9nLlByaW50bG4oIi0tLS0tLS0tLS1QcmludCBxdWVyeTogLS0tLS0tLS0tIiwgcXVlcnlTdCkqLw0K",
+	"idBinaryType": "txt",
+	"idBinaryLg": "FR"
+} -->

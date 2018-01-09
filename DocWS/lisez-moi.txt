@@ -1,0 +1,2 @@
+le fichier de config est vidé de ses paramètres
+et impossible de faire tourner l'API sans DB
