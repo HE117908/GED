@@ -39,10 +39,11 @@ type configStruct struct {
 		User     string `json:"user"`
 		Password string `json:"password"`
 		Port     string `json:"port"`
+		PathOUT string `json:"pathOUT"`
 	} `json:"database"`
 	Host string `json:"host"`
 	Port string `json:"port"`
-	DirPath string `json:"dirPath"`
+	PathIN string `json:"pathIN"`
 }
 
 //définition de la structure d'un document
@@ -149,7 +150,7 @@ var uploadDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	code := document.Id_Code
 	typedoc := document.Idt_Code
 	comment := document.Id_Comment
-	path := Config.DirPath + document.Id_FileName
+	path := Config.Database.PathOUT + document.Id_FileName
 	nom := document.Id_FileName
 	classed := document.Id_Classed
 	modTime := document.Id_Creation_Date
@@ -182,7 +183,7 @@ var uploadDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("----------document uploaded:---", document.Id_FileName)
 	}
 
-	writeDocument(strDoc, nom, Config.DirPath)
+	writeDocument(strDoc, nom, Config.Database.PathOUT)
 
 	return
 })
@@ -580,7 +581,7 @@ func checkIni() {
 	_, err := loadConfiguration("config.json")
 	checkErr(err, "impossible de lire le fichier de configuration")
 
-	if _, err := os.Stat(Config.DirPath); os.IsNotExist(err) {
+	if _, err := os.Stat(Config.Database.PathOUT); os.IsNotExist(err) {
 		// si le dossier n'existe pas, le créer //à placer au démarrage du programme
 
 		folderPath := filepath.Join("C:/", "GEDdocuments/")

@@ -120,7 +120,7 @@
 				<label for="affaire">Affaire : </label>
 				<input type="text" name="affaire" id="searchAffaire" />
 				<br><br>
-				<label for="classed">classé : </label>
+				<label for="classed">Non classé : </label>
 				<input type="checkbox" name="classed" id="searchClassed" />
 				<br><br>
 				<input type="submit" value="Rechercher" onclick="getDoc();" />
@@ -352,9 +352,9 @@
 			if(affaire == ""){
 				affaire = "_";
 			}
-			var classed = document.getElementById("searchClassed").checked;
+			var unclassed = document.getElementById("searchClassed").checked;
 			var url = "";
-			if(classed == true){
+			if(unclassed == true){
 				url = "temp/" + user;
 				console.log("url" + url);
 			}else{

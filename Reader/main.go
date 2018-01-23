@@ -41,69 +41,81 @@ type iDoc struct{
 	DUpdate string `json:"dUpdate"`
 }
 
-var path = "test\\"
-
-func readDirDocs(){
-	var myDoc iDoc
-	fi := getFiles(path)
-
-	for _, fi := range fi {
-	    if fi.Mode().IsRegular() {
-			//fmt.Println("---fichier sys : ---%+v\n", fi.Sys())
-			myDoc.Id_Code = "0"
-			myDoc.Idt_Code = "MANUAL"
-			myDoc.Id_Comment = ""
-			myDoc.Id_Path = path + fi.Name()
-			myDoc.Id_FileName = fi.Name()
-			myDoc.Id_Classed = "0"
-			myDoc.Id_Creation_Date = fi.ModTime().String()
-			myDoc.Id_Version = "0"
-			myDoc.Id_Size = strconv.Itoa(int(fi.Size()))
-			myDoc.Id_JSon = ""
-			contentDoc := readDocument(path + fi.Name())
-			myDoc.Id_Binary = base64Encode(string(contentDoc))
-			ext := filepath.Ext(fi.Name())
-			myDoc.Id_BinaryType = ext[1:]
-			myDoc.Id_BinaryLg = "FR"
-
-			//create json
-			//json.NewEncoder(jsonDoc).Encode(myDoc)
-			jsonDoc, _ := json.Marshal(myDoc)
-
-	        if(fi.IsDir() == false){
-	        	url := "http://localhost:8080/document/upload"
-				postDoc(fi, url, getToken(), string(jsonDoc))
-	        }else{
-	        	log.Println("---not a file, it is a directory---")
-	        }
-	    }
-	}
-
+//définition de la structure du fichier de configuration
+type configStruct struct {
+	Database struct {
+		Server     string `json:"server"`
+		DbName    string `json:"dbName"`
+		User     string `json:"user"`
+		Password string `json:"password"`
+		Port     string `json:"port"`
+		PathOUT string `json:"pathOUT"`
+	} `json:"database"`
+	Host string `json:"host"`
+	Port string `json:"port"`
+	PathIN string `json:"pathIN"`
 }
 
-//renvoye le token du serveur WS; return token signé
-func getToken()string{
-	url := "http://localhost:8080/get-token/AV"
+var Config, _ = loadConfiguration("config.json")
 
-	client := &http.Client{}
+//lecture d'un directory et ses sous-directory; param : path (directory à lire)
+func readDirDocs(dir_path string) {
 
-	req, err := http.NewRequest("GET", url, nil)
-		checkErr(err)
-	resp, err := client.Do(req)
-		checkErr(err)
+	// Scan, boucle les dirs et files
+	filepath.Walk(dir_path, func(path string, f os.FileInfo, err error) error {
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-		checkErr(err)
-	token := string(body)
+			f, err = os.Stat(path)
+			checkErr(err)
 
-	if(token != ""){
-		log.Println("---token received : ----"/* + token*/)
-	}else{
-		log.Println("---!no token received! : ----"/* + token*/)
-	}
+			f_mode := f.Mode()
+			
+			if f_mode.IsDir() { //if if directory
+				log.Println("---not a file, this is a directory---" + f.Name())
+			
+			} else if f_mode.IsRegular(){ // if is file
+				
+				SendDocument(path)
+				log.Println("----file sent : ----" + f.Name())
+			}
+		return nil
+	})
+}
 
-    return token
+
+//fonctions qui lit le répertoire passé en paramètre (le IN du config.json)
+func SendDocument(path string){
+	var myDoc iDoc
+
+	//récupération du fichier
+	fi, err := os.Stat(path)
+	checkErr(err)
+
+	//fmt.Println("---fichier sys : ---%+v\n", fi.Sys())
+	myDoc.Id_Code = "0"
+	myDoc.Idt_Code = "MANUAL"
+	myDoc.Id_Comment = "document upload from reader"
+	myDoc.Id_Path = path
+	myDoc.Id_FileName = fi.Name()
+	myDoc.Id_Classed = "0"
+	modTime := fi.ModTime().String()
+	myDoc.Id_Creation_Date = modTime[0:10]
+	myDoc.Id_Version = "0"
+	myDoc.Id_Size = strconv.Itoa(int(fi.Size()))
+	myDoc.Id_JSon = ""
+	contentDoc := readDocument(path + fi.Name())
+	myDoc.Id_Binary = base64Encode(string(contentDoc))
+	ext := filepath.Ext(fi.Name())
+	myDoc.Id_BinaryType = ext[1:]
+	myDoc.Id_BinaryLg = "FR"
+
+
+	//create json
+	jsonDoc, err := json.Marshal(myDoc)
+	checkErr(err)
+
+	url := "http://" + Config.Database.Server + ":8080/document/upload"
+	postDoc(fi, url, getToken(), string(jsonDoc))
+	//envoi du document
 }
 
 //utilisation service web; requête enregistrement doc; params : fi (le fichier), url (l'url utilisé pour le post), token (le token signé de sécurité); return /
@@ -125,15 +137,29 @@ func postDoc(fi os.FileInfo, url string, token string, jsonDoc string) {
 	return
 }
 
-//lecture d'un directory; param : path (directory à lire); return: fi (un slice des fichiers du dir)
-func getFiles(path string) []os.FileInfo{
-	d, err := os.Open(path)
+//renvoye le token du serveur WS; return token signé
+func getToken()string{
+	url := "http://" + Config.Database.Server + ":8080/get-token/AV"
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
 		checkErr(err)
-	defer d.Close()
-	fi, err := d.Readdir(-1)
+	resp, err := client.Do(req)
 		checkErr(err)
 
-	return fi
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+		checkErr(err)
+	token := string(body)
+
+	if(token != ""){
+		log.Println("---token received : ----"/* + token*/)
+	}else{
+		log.Println("---!no token received! : ----"/* + token*/)
+	}
+
+    return token
 }
 
 //lecture d'un fichier; param : path (chemin du fichier à lire); return: fi (le fichier)
@@ -165,8 +191,20 @@ func checkErr(err error) {
 	}
 }
 
+func loadConfiguration(file string) (configStruct, error) {
+    var conf configStruct
+    configFile, err := os.Open(file)
+    defer configFile.Close()
+    if err != nil {
+        return conf, err
+    }
+    jsonParser := json.NewDecoder(configFile)
+    jsonParser.Decode(&conf)
+    return conf, err
+}
+
 func main() {
 	//token := getToken()
 
-	readDirDocs()
+	readDirDocs(Config.PathIN)
 }
