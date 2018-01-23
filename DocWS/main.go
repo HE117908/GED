@@ -113,7 +113,7 @@ func GetTokenHandler(w http.ResponseWriter, r *http.Request){
 }
 
 
-//retourne un document (json) en fonction d'un guid passé; exple guid: C61E7502-1D7A-4F4E-9577-CE73CE76D0E4
+//retourne un document (json) en fonction d'un guid passé; exple guid: 
 var getDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -269,16 +269,16 @@ var deleteDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	return
 })
 
-func formHandler(w http.ResponseWriter, r *http.Request) {
-    tmpl, err := template.ParseFiles("views/form_upload.html")
+func interfaceHandler(w http.ResponseWriter, r *http.Request) {
+    tmpl, err := template.ParseFiles("views/interface.html")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    checkErr(err, "--- func formHandler() template.ParseFiles()---")
-    log.Println("--- func formHandler():  page form requested ---")
+    checkErr(err, "--- func interfaceHandler() template.ParseFiles()---")
+    log.Println("--- func interfaceHandler():  page form requested ---")
 
-    tmpl.Execute(w, nil)    // Affiche le contenu de "views/form_upload.html"
+    tmpl.Execute(w, nil)    // Affiche le contenu de "views/interface.html"
 }
 
 
@@ -607,7 +607,7 @@ func main(){
 		 GetTokenHandler(w, r)
 	}).Methods("GET")
 	router.HandleFunc("/interface", func(w http.ResponseWriter, r *http.Request){
-		 formHandler(w, r)
+		 interfaceHandler(w, r)
 	}).Methods("GET")
 
 	router.Handle("/document/{guid}",jwtMiddleware.Handler(getDoc)).Methods("GET") //retourne un doc

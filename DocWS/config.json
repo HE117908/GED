@@ -1,4 +1,12 @@
 {
     "database": {
+        "server": "",
+        "dbName" : "",
+        "user" : "",
+        "password": "",
+        "port": ""
     },
+    "host": "",
+    "port": "",
+    "dirPath" : ""
 }
