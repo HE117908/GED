@@ -1,5 +1,10 @@
 {
     "database": {
+        "server": "",
+        "dbName" : "",
+        "user" : "",
+        "password": "",
+        "port": "",
         "pathOUT" : "C:/GEDdocuments"
     },
     "host": "localhost",
