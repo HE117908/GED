@@ -114,7 +114,7 @@ func GetTokenHandler(w http.ResponseWriter, r *http.Request){
 }
 
 
-//retourne un document (json) en fonction d'un guid passé; exple guid: 
+//retourne un document (json) en fonction d'un guid passé; exple guid: C61E7502-1D7A-4F4E-9577-CE73CE76D0E4
 var getDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -188,7 +188,7 @@ var uploadDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	return
 })
 
-//retourne la liste documents non classé en fonction d'une personne; exple user : 
+//retourne la liste documents non classé en fonction d'une personne; exple user : AV
 var waitingDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -208,7 +208,7 @@ var waitingDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	return
 })
 
-//retourne une liste documents en fonction de paramètres passés (affaire,commentaires,...) exple : 
+//retourne une liste documents en fonction de paramètres passés (affaire,commentaires,...) exple : SNOMFR
 var listDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -250,7 +250,7 @@ var listDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	return
 })
 
-//supprime un document en fonction d'un guid passé; exple guid: 
+//supprime un document en fonction d'un guid passé; exple guid: C61E7502-1D7A-4F4E-9577-CE73CE76D0E4
 var deleteDoc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	
 	vars := mux.Vars(r)
@@ -603,10 +603,11 @@ func main(){
 	})
 
 	router := mux.NewRouter()
+	router.Schemes("https")
 
 	router.HandleFunc("/get-token/{userCode}", func(w http.ResponseWriter, r *http.Request){
 		 GetTokenHandler(w, r)
-	}).Methods("GET")
+	}).Methods("GET")//.Schemes("https")
 	router.HandleFunc("/interface", func(w http.ResponseWriter, r *http.Request){
 		 interfaceHandler(w, r)
 	}).Methods("GET")
@@ -619,7 +620,8 @@ func main(){
 	router.Handle("/document/{guid}",jwtMiddleware.Handler(uploadDoc)).Methods("PUT") //modifie un doc
 	router.Handle("/document/{guid}",jwtMiddleware.Handler(deleteDoc)).Methods("DELETE") //supprime un doc
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	//log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServeTLS(":8081", "cert.pem", "key.pem", router))
 }
 
 //userCode/{userCode}/project/{project}/keywords/{keywords}/dateCreation/{dateCreation}
